@@ -99,11 +99,15 @@ jobs:
         sed -i "s|ghcr.io/your-repo/user-service:latest|$IMAGE_TAG|g" infra/k8s/user-service.yml
         
         # Create image pull secret for GHCR
+        kubectl delete secret ghcr-secret -n demo || true
         kubectl create secret docker-registry ghcr-secret \
           --docker-server=ghcr.io \
           --docker-username=${{ github.actor }} \
           --docker-password=${{ secrets.GHCR_TOKEN }} \
-          --namespace=demo || true
+          --namespace=demo
+        
+        # Debug the secret
+        kubectl get secret ghcr-secret -n demo -o yaml
         
         # Apply manifests
         kubectl apply -f infra/k8s/namespace.yml
