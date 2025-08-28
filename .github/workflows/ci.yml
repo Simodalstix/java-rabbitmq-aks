@@ -100,7 +100,20 @@ jobs:
         
         # Apply manifests
         kubectl apply -f infra/k8s/namespace.yml
+        kubectl apply -f infra/k8s/secrets.yml
         kubectl apply -f infra/k8s/user-service.yml
         
-        # Wait for rollout
-        kubectl rollout status deployment/user-service -n demo --timeout=300s
+        # Debug deployment issues
+        echo "Checking pod status..."
+        kubectl get pods -n demo
+        kubectl describe pods -n demo
+        
+        # Check if pods are failing
+        FAILED_PODS=$(kubectl get pods -n demo --field-selector=status.phase=Failed -o name)
+        if [ ! -z "$FAILED_PODS" ]; then
+          echo "Found failed pods, checking logs:"
+          kubectl logs $FAILED_PODS -n demo || true
+        fi
+        
+        # Wait for rollout with more time
+        kubectl rollout status deployment/user-service -n demo --timeout=600s

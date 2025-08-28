@@ -20,7 +20,7 @@ spec:
         - containerPort: 8080
         env:
         - name: DATABASE_URL
-          value: "jdbc:postgresql://postgresql:5432/demo"
+          value: "jdbc:postgresql://psql-java-rabbitmq.postgres.database.azure.com:5432/userdb"
         - name: DATABASE_USER
           value: "postgres"
         - name: DATABASE_PASSWORD
