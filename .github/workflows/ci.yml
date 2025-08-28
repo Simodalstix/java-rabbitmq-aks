@@ -130,4 +130,12 @@ jobs:
         fi
         
         # Wait for rollout with more time
-        kubectl rollout status deployment/user-service -n demo --timeout=600s
+        echo "Waiting for deployment to complete..."
+        kubectl rollout status deployment/user-service -n demo --timeout=900s
+        
+        # If still failing, show final status
+        if [ $? -ne 0 ]; then
+          echo "Deployment failed, showing final pod status:"
+          kubectl get pods -n demo
+          kubectl describe pods -n demo
+        fi
