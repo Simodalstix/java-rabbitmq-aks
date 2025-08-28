@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner }}
 
 jobs:
   build-java:
@@ -44,8 +44,9 @@ jobs:
     - name: Build and push Docker image
       if: github.event_name != 'pull_request'
       run: |
-        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ github.sha }} .
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ github.sha }}
+        IMAGE_TAG=$(echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ github.sha }}" | tr '[:upper:]' '[:lower:]')
+        docker build -t $IMAGE_TAG .
+        docker push $IMAGE_TAG
       working-directory: services/${{ matrix.service }}
 
   build-python:
@@ -68,8 +69,9 @@ jobs:
     - name: Build and push Docker image
       if: github.event_name != 'pull_request'
       run: |
-        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/analytics-consumer:${{ github.sha }} .
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/analytics-consumer:${{ github.sha }}
+        IMAGE_TAG=$(echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/analytics-consumer:${{ github.sha }}" | tr '[:upper:]' '[:lower:]')
+        docker build -t $IMAGE_TAG .
+        docker push $IMAGE_TAG
       working-directory: services/analytics-consumer
 
   deploy:
@@ -86,7 +88,8 @@ jobs:
     - name: Deploy to AKS
       run: |
         # Update image tags in manifests
-        sed -i "s|ghcr.io/your-repo/user-service:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/user-service:${{ github.sha }}|g" infra/k8s/user-service.yml
+        IMAGE_TAG=$(echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/user-service:${{ github.sha }}" | tr '[:upper:]' '[:lower:]')
+        sed -i "s|ghcr.io/your-repo/user-service:latest|$IMAGE_TAG|g" infra/k8s/user-service.yml
         
         # Apply manifests
         kubectl apply -f infra/k8s/namespace.yml
