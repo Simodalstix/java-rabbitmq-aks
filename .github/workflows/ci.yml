@@ -84,7 +84,14 @@ jobs:
       uses: azure/setup-kubectl@v3
     - name: Set up kubeconfig
       run: |
+        mkdir -p ~/.kube
+        if [ -z "${{ secrets.KUBE_CONFIG }}" ]; then
+          echo "ERROR: KUBE_CONFIG secret is empty"
+          exit 1
+        fi
         echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+        chmod 600 ~/.kube/config
+        echo "Kubeconfig written successfully"
     - name: Deploy to AKS
       run: |
         # Update image tags in manifests
