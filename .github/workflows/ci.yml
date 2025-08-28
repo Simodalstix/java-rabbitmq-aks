@@ -5,6 +5,11 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-java:
@@ -29,8 +34,18 @@ jobs:
     - name: Build
       run: mvn package -DskipTests
       working-directory: services/${{ matrix.service }}
-    - name: Build Docker
-      run: docker build -t ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ github.sha }} .
+    - name: Log in to Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_TOKEN }}
+    - name: Build and push Docker image
+      if: github.event_name != 'pull_request'
+      run: |
+        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ github.sha }} .
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}:${{ github.sha }}
       working-directory: services/${{ matrix.service }}
 
   build-python:
@@ -43,6 +58,39 @@ jobs:
     - name: Install dependencies
       run: pip install -r requirements.txt
       working-directory: services/analytics-consumer
-    - name: Build Docker
-      run: docker build -t ghcr.io/${{ github.repository }}/analytics-consumer:${{ github.sha }} .
+    - name: Log in to Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_TOKEN }}
+    - name: Build and push Docker image
+      if: github.event_name != 'pull_request'
+      run: |
+        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/analytics-consumer:${{ github.sha }} .
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/analytics-consumer:${{ github.sha }}
       working-directory: services/analytics-consumer
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [build-java, build-python]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+    - name: Set up kubeconfig
+      run: |
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+    - name: Deploy to AKS
+      run: |
+        # Update image tags in manifests
+        sed -i "s|ghcr.io/your-repo/user-service:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/user-service:${{ github.sha }}|g" infra/k8s/user-service.yml
+        
+        # Apply manifests
+        kubectl apply -f infra/k8s/namespace.yml
+        kubectl apply -f infra/k8s/user-service.yml
+        
+        # Wait for rollout
+        kubectl rollout status deployment/user-service -n demo --timeout=300s
