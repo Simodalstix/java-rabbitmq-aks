@@ -75,7 +75,7 @@ jobs:
       working-directory: services/analytics-consumer
 
   deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.DEPLOY_ENABLED == 'true'
     needs: [build-java, build-python]
     runs-on: ubuntu-latest
     steps:

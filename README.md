@@ -1,6 +1,7 @@
 # Java Microservices on Azure Kubernetes Service
 
 [![Build Status](https://github.com/Simodalstix/java-rabbitmq-aks/workflows/CI%2FCD%20Pipeline/badge.svg)](https://github.com/Simodalstix/java-rabbitmq-aks/actions)
+[![Release](https://img.shields.io/github/v/release/Simodalstix/java-rabbitmq-aks)](https://github.com/Simodalstix/java-rabbitmq-aks/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://openjdk.java.net/projects/jdk/17/)
 [![Terraform](https://img.shields.io/badge/Terraform-1.6+-blue.svg)](https://www.terraform.io/)
