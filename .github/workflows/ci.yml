@@ -98,7 +98,11 @@ jobs:
         IMAGE_TAG=$(echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/user-service:${{ github.sha }}" | tr '[:upper:]' '[:lower:]')
         sed -i "s|ghcr.io/your-repo/user-service:latest|$IMAGE_TAG|g" infra/k8s/user-service.yml
         
-        # Create image pull secret for GHCR
+        # Apply manifests in correct order
+        kubectl apply -f infra/k8s/namespace.yml
+        kubectl apply -f infra/k8s/secrets.yml
+        
+        # Create image pull secret for GHCR (after namespace exists)
         kubectl delete secret ghcr-secret -n demo || true
         kubectl create secret docker-registry ghcr-secret \
           --docker-server=ghcr.io \
@@ -106,12 +110,7 @@ jobs:
           --docker-password=${{ secrets.GHCR_TOKEN }} \
           --namespace=demo
         
-        # Debug the secret
-        kubectl get secret ghcr-secret -n demo -o yaml
-        
-        # Apply manifests
-        kubectl apply -f infra/k8s/namespace.yml
-        kubectl apply -f infra/k8s/secrets.yml
+        # Deploy user service
         kubectl apply -f infra/k8s/user-service.yml
         
         # Force restart to pick up new image pull secret
